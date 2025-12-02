@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"test_go/pkg/rabbitmq/utils"
+	"github.com/Alice00021/test_common/pkg/rabbitmq/utils"
 
+	rmqrpc "github.com/Alice00021/test_common/pkg/rabbitmq/rmq_rpc"
 	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
-	rmqrpc "test_go/pkg/rabbitmq/rmq_rpc"
 )
 
 // ErrConnectionClosed -.

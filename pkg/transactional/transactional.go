@@ -3,7 +3,7 @@ package transactional
 import (
 	"context"
 	"fmt"
-	"test_go/pkg/postgres"
+	"github.com/Alice00021/test_common/pkg/postgres"
 )
 
 type Transactional interface {

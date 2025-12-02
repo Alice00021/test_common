@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"test_go/pkg/rabbitmq/utils"
+	"github.com/Alice00021/test_common/pkg/rabbitmq/utils"
 
+	"github.com/Alice00021/test_common/pkg/logger"
+	rmqrpc "github.com/Alice00021/test_common/pkg/rabbitmq/rmq_rpc"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"test_go/pkg/logger"
-	rmqrpc "test_go/pkg/rabbitmq/rmq_rpc"
 )
 
 const (

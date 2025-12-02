@@ -3,13 +3,13 @@ package server
 import (
 	"errors"
 	"fmt"
-	"test_go/pkg/rabbitmq/utils"
+	"github.com/Alice00021/test_common/pkg/rabbitmq/utils"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 
-	"test_go/pkg/logger"
-	rmqrpc "test_go/pkg/rabbitmq/rmq_rpc"
+	"github.com/Alice00021/test_common/pkg/logger"
+	rmqrpc "github.com/Alice00021/test_common/pkg/rabbitmq/rmq_rpc"
 )
 
 const (
