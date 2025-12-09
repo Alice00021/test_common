@@ -1,32 +1,38 @@
 package server
 
 import (
-	"net/http"
+	"net"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 )
 
 type Server struct {
 	address string
+	server  *rpc.Server
 }
 
 func NewServer(address string) *Server {
-	return &Server{address: address}
+	return &Server{
+		address: address,
+		server:  rpc.NewServer(),
+	}
 }
 
 func (s *Server) Register(service interface{}) error {
-	return rpc.Register(service)
+	return s.server.Register(service)
 }
 
 func (s *Server) Start() error {
-	http.HandleFunc("/rpc", func(w http.ResponseWriter, r *http.Request) {
-		conn, _, err := w.(http.Hijacker).Hijack()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		jsonrpc.ServeConn(conn)
-	})
+	listener, err := net.Listen("tcp", s.address)
+	if err != nil {
+		return err
+	}
 
-	return http.ListenAndServe(s.address, nil)
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			return err
+		}
+		go s.server.ServeCodec(jsonrpc.NewServerCodec(conn))
+	}
 }
