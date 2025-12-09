@@ -1,6 +1,7 @@
 package client
 
 import (
+	"io"
 	"net"
 	"net/rpc"
 	"net/rpc/jsonrpc"
@@ -35,10 +36,11 @@ func NewHTTPClient(host, path string) (*rpc.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = conn.Write([]byte("POST " + path + " HTTP/1.0\r\n\r\n"))
-	if err != nil {
-		conn.Close()
-		return nil, err
-	}
+
+	io.WriteString(conn, "POST "+path+" HTTP/1.1\r\n")
+	io.WriteString(conn, "Host: "+host+"\r\n")
+	io.WriteString(conn, "Content-Type: application/json\r\n")
+	io.WriteString(conn, "\r\n")
+
 	return jsonrpc.NewClient(conn), nil
 }
