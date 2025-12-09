@@ -6,10 +6,22 @@ import (
 	"net/rpc/jsonrpc"
 )
 
-func NewClient(address string) (*rpc.Client, error) {
+type Client struct {
+	*rpc.Client
+	conn net.Conn
+}
+
+func NewClient(address string) (*Client, error) {
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
 		return nil, err
 	}
-	return jsonrpc.NewClient(conn), nil
+	return &Client{
+		Client: jsonrpc.NewClient(conn),
+		conn:   conn,
+	}, nil
+}
+
+func (c *Client) Close() error {
+	return c.conn.Close()
 }
