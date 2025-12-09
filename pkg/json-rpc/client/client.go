@@ -31,5 +31,14 @@ func NewClient(address string) (*TCPClient, error) {
 }
 
 func NewHTTPClient(host, path string) (*rpc.Client, error) {
-	return rpc.DialHTTPPath("tcp", host, path)
+	conn, err := net.Dial("tcp", host)
+	if err != nil {
+		return nil, err
+	}
+	_, err = conn.Write([]byte("POST " + path + " HTTP/1.0\r\n\r\n"))
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+	return jsonrpc.NewClient(conn), nil
 }
