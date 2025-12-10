@@ -9,8 +9,9 @@ import (
 )
 
 type Server struct {
-	address string
-	server  *rpc.Server
+	address  string
+	server   *rpc.Server
+	listener net.Listener
 }
 
 func NewServer(address string) *Server {
@@ -34,14 +35,27 @@ func (s *Server) StartTCP() error {
 	if err != nil {
 		return err
 	}
+	s.listener = listener
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
+			if s.listener == nil {
+				return nil
+			}
 			return err
 		}
 		go s.server.ServeCodec(jsonrpc.NewServerCodec(conn))
 	}
+}
+
+func (s *Server) Shutdown() error {
+	if s.listener != nil {
+		err := s.listener.Close()
+		s.listener = nil
+		return err
+	}
+	return nil
 }
 
 func (s *Server) StartHTTP() error {
