@@ -30,23 +30,27 @@ func (s *Server) Register(service interface{}) error {
 	return s.server.Register(service)
 }
 
-func (s *Server) StartTCP() error {
+func (s *Server) StartTCP(errChan chan<- error) error {
 	listener, err := net.Listen("tcp", s.address)
 	if err != nil {
 		return err
 	}
 	s.listener = listener
 
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			if s.listener == nil {
-				return nil
+	go func() {
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				if s.listener == nil {
+					return
+				}
+				errChan <- err
+				return
 			}
-			return err
+			go s.server.ServeCodec(jsonrpc.NewServerCodec(conn))
 		}
-		go s.server.ServeCodec(jsonrpc.NewServerCodec(conn))
-	}
+	}()
+	return nil
 }
 
 func (s *Server) Shutdown() error {
