@@ -1,62 +1,53 @@
 package jwt
 
 import (
+	"crypto/rsa"
+	"errors"
 	"github.com/golang-jwt/jwt/v5"
 	"time"
 )
 
-type JWTManager struct {
-	secretKey          string
-	AccessTokenExpire  time.Duration
-	RefreshTokenExpire time.Duration
+var (
+	ErrInvalidToken = errors.New("invalid token")
+	ErrExpiredToken = errors.New("token has expired")
+)
+
+func DecodePrivateKey(privateKey []byte) (*rsa.PrivateKey, error) {
+	return jwt.ParseRSAPrivateKeyFromPEM(privateKey)
 }
 
-func NewJWTManager(secretKey string) *JWTManager {
-	return &JWTManager{
-		secretKey:          secretKey,
-		AccessTokenExpire:  15 * time.Minute,
-		RefreshTokenExpire: 7 * 24 * time.Hour,
-	}
-}
-
-type Claims struct {
-	UserID   int64  `json:"user_id"`
-	Username string `json:"username"`
-	jwt.RegisteredClaims
-}
-
-func (jm *JWTManager) GenerateAccessToken(userID int64, username string) (string, error) {
-	return jm.generateToken(userID, username, jm.AccessTokenExpire)
-}
-
-func (jm *JWTManager) GenerateRefreshToken(userID int64, username string) (string, error) {
-	return jm.generateToken(userID, username, jm.RefreshTokenExpire)
-}
-func (jm *JWTManager) generateToken(userID int64, username string, expire time.Duration) (string, error) {
-	claims := &Claims{
-		UserID:   userID,
-		Username: username,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expire)),
-		},
+func GenerateToken(duration time.Duration, data map[string]interface{}, key interface{}, issuer string) (string, error) {
+	claims := &jwt.MapClaims{
+		"iss":  issuer,
+		"exp":  time.Now().Add(duration).UTC().Unix(),
+		"iat":  time.Now().UTC().Unix(),
+		"data": data,
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(jm.secretKey))
+	token := jwt.NewWithClaims(jwt.GetSigningMethod("RS256"), claims)
+	return token.SignedString(key)
+
 }
 
-func (jm *JWTManager) ParseToken(tokenString string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(jm.secretKey), nil
+func ValidateToken(tokenString string, key interface{}) (map[string]interface{}, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if jwt.GetSigningMethod("RS256") != token.Method {
+			return nil, ErrInvalidToken
+		}
+
+		return key, nil
 	})
 
 	if err != nil {
-		return nil, err
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, ErrExpiredToken
+		}
+		return nil, ErrInvalidToken
 	}
 
-	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return claims, nil
 	}
 
-	return nil, jwt.ErrInvalidKey
+	return nil, ErrInvalidToken
 }
